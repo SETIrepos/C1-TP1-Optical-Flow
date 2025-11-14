@@ -171,7 +171,7 @@ def main():
     Fonction principale
     """
     # Configuration
-    image_dir = 'TP2-Hugo'
+    image_dir = 'Images'
     output_dir = 'resultats_soustraction_fond'
     n_images = 100
     

@@ -175,8 +175,8 @@ def visualize_results(results, output_dir):
                        ha='center', fontsize=10)
     
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'comparaison_seuillage.png'), dpi=150)
-    print(f"Sauvegarde: {os.path.join(output_dir, 'comparaison_seuillage.png')}")
+    plt.savefig(os.path.join(output_dir, 'comparaison_seuillage_ecarts_types.png'), dpi=150)
+    print(f"Sauvegarde: {os.path.join(output_dir, 'comparaison_seuillage_ecarts_types.png')}")
     print(f"Seuil utilisé: σ > {threshold}")
     
     plt.show()

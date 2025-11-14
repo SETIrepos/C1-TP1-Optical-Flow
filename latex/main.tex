@@ -12,6 +12,7 @@
 \usepackage{geometry}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{float}
 
 \geometry{margin=2.5cm}
 
@@ -74,14 +75,14 @@ Les pixels du fond (route, bâtiments) ont un $\sigma$ faible (valeur constante)
 
 Trois valeurs de $N$ ont été testées : $N = 5$, $N = 20$ et $N = 100$ (figure \ref{fig:mean_std}).
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_moyennes.png}
     \caption{Images moyennes pour différentes valeurs de $N$}
     \label{fig:mean}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_ecarts_types.png}
     \caption{Images d'écart-type pour différentes valeurs de $N$. Les zones rouges/jaunes indiquent les pixels à forte variation (passage de véhicules).}
@@ -107,9 +108,9 @@ Le seuil doit être ajusté pour ne conserver que les pixels présentant une var
 
 L'application d'un seuil $\sigma > 30$ permet de segmenter les zones de mouvement (figure \ref{fig:seuillage}). Les pixels blancs représentent les zones où des véhicules ont été détectés.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_seuillage.png}
+    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_seuillage_ecarts_types.png}
     \caption{Résultat du seuillage sur l'écart-type ($\sigma > 30$) pour les trois valeurs de $N$. Les zones blanches correspondent aux pixels de mouvement (voitures).}
     \label{fig:seuillage}
 \end{figure}
@@ -127,7 +128,7 @@ Ces résultats confirment que le choix de $N$ et du seuil sont cruciaux pour obt
 
 En analysant l'évolution temporelle du pixel (200, 150) situé au milieu de la route (figure \ref{fig:pixel_evolution}), on constate que le calcul global de $(\mu, \sigma)$ sur toute la séquence est trompeur.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{../resultats_soustraction_fond/evolution_pixel_200_150.png}
     \caption{Évolution temporelle du niveau de gris du pixel (200, 150). Les variations brusques correspondent aux passages de véhicules.}
@@ -170,7 +171,7 @@ Le paramètre $N$ contrôle la sensibilité de la détection.
 
 L'algorithme a été testé avec trois valeurs de $N$ : 1, 2 et 4 (figure \ref{fig:sigmadelta}).
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{../resultats_soustraction_fond/sigmadelta_comparaison.png}
     \caption{Résultats de l'algorithme Sigma-Delta pour différentes valeurs de $N$. Les zones blanches indiquent les mouvements détectés.}
@@ -191,7 +192,7 @@ L'algorithme en niveaux de gris détecte non seulement les véhicules mais aussi
 
 L'espace HSV ne s'avère pas adapté pour filtrer les ombres. En effet, les ombres modifient non seulement la luminosité (canal V), mais aussi la teinte (H) et la saturation (S) (figure \ref{fig:canaux_hsv}).
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{../resultats_soustraction_fond/canaux_RGB_HSV.png}
     \caption{Décomposition en canaux RGB et HSV. Les ombres affectent tous les canaux HSV, y compris H et S.}
@@ -200,7 +201,7 @@ L'espace HSV ne s'avère pas adapté pour filtrer les ombres. En effet, les ombr
 
 À l'inverse, l'espace LAB se révèle bien plus efficace. Les canaux a et b représentent uniquement la chrominance, indépendante de la luminosité. Les ombres, qui affectent principalement le canal L, sont ainsi ignorées (figure \ref{fig:canaux_lab}).
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{../resultats_soustraction_fond/canaux_LAB.png}
     \caption{Décomposition en canaux LAB. Le canal L contient l'information de luminosité (ombres), tandis que a et b contiennent uniquement la chrominance.}
@@ -211,7 +212,7 @@ L'espace HSV ne s'avère pas adapté pour filtrer les ombres. En effet, les ombr
 
 Pour exploiter cette propriété, on applique l'algorithme Sigma-Delta directement sur les canaux a et b. On calcule d'abord la magnitude de la chrominance : $\text{chroma} = \sqrt{a^2 + b^2}$, puis on applique Sigma-Delta sur cette image en niveaux de gris.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_seuillage_simple.png}
     \caption{Comparaison des masques de détection. L'approche LAB maintient la détection des véhicules.}

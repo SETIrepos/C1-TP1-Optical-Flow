@@ -13,6 +13,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{float}
+\usepackage{hyperref}
 
 \geometry{margin=2.5cm}
 
@@ -214,7 +215,9 @@ L'approche LAB n'est pas particulièrement plus performante et est une solution 
 
 Nous allons présenter le principe fondamental de la méthode classique de Horn \& Schunck pour l'estimation du flot optique entre deux images consécutives, ainsi que l'implémentation MATLAB de l'algorithme telle que demandée dans l'énoncé.
 
-\subsection{Hypothèse et formulation du problème}
+\subsection{Présentation de l'article}
+
+\subsubsection{Hypothèse et formulation du problème}
 
 L'article de Horn \& Schunck repose sur l'hypothèse de \textbf{constance de la luminance} :
 \[
@@ -239,7 +242,7 @@ Le paramètre $\alpha$ contrôle la force de cette régularisation :
     \item $\alpha$ grand : flot très lissé mais perte de détails.
 \end{itemize}
 
-\subsection{Discrétisation des dérivées (Section 7)}
+\subsubsection{Discrétisation des dérivées (Section 7)}
 
 Les dérivées proposées par Horn \& Schunck utilisent des noyaux 2x2 symétriques :
 
@@ -251,7 +254,7 @@ k_t = \frac{1}{4}\begin{bmatrix}1 & 1\\ 1 & 1\end{bmatrix}.
 
 Elles sont appliquées aux deux images pour obtenir $E_x, E_y, E_t$.
 
-\subsection{Laplacien et terme de lissage (Section 8)}
+\subsubsection{Laplacien et terme de lissage (Section 8)}
 
 Horn \& Schunck utilisent une moyenne pondérée des 8 voisins pour approcher le laplacien :
 
@@ -266,7 +269,7 @@ Horn \& Schunck utilisent une moyenne pondérée des 8 voisins pour approcher le
 
 Cette moyenne correspond à l'estimation locale des valeurs $\bar u$ et $\bar v$ utilisées dans la mise à jour du schéma. C'est pour cela que la valeur centrale est 0 et non -1 car la valeur du pixel n'influence pas la valeur de la moyenne des voisins.
 
-\subsection{Schéma final d’itération (Section 12)}
+\subsubsection{Schéma final d’itération (Section 12)}
 
 À chaque itération :
 
@@ -280,9 +283,9 @@ v &= \bar v - \frac{E_y(E_x \bar u + E_y \bar v + E_t)}{\alpha^2 + E_x^2 + E_y^2
 
 Ce schéma est appliqué environ 100 à 300 fois.
 
-\subsection{Détection simple des objets en mouvement}
+\subsubsection{Détection simple des objets en mouvement}
 
-Pour détecter si un pixel est en mouvement entre 2 images, on peut calculer les magnitude du flow optique, autrement dit la "force" avec laquelle le pixel bouge entre les 2 images et on peut comparer cette magnitude avec la moyenne des magnitudes de chaque pixel de l'image.\\
+Pour détecter si un pixel est en mouvement entre 2 images, on peut calculer les magnitude du flot optique, autrement dit la "force" avec laquelle le pixel bouge entre les 2 images et on peut comparer cette magnitude avec la moyenne des magnitudes de chaque pixel de l'image.\\
 
 La magnitude du flot optique :
 \[
@@ -296,9 +299,114 @@ m > \mu_m + 0.5 \sigma_m
 
 pour segmenter les zones en mouvement.
 
-\subsection{Filtrage Gaussien}
+\subsubsection{Filtrage Gaussien}
 
 Il est mentionné dans l'article que cet algorithme est assez sensible au bruit, il peut être intéressant de filtrer les images pour rendre la détection du flow optique plus fluide. On utilise simplement un filtre gaussien.
+
+\subsection{Implémentation et analyse des résultats}
+
+\subsubsection{Implémentation du code}
+
+Le code complet est disponible sur le \href{https://github.com/SETIrepos/C1-TP1-Optical-Flow.git}{repo GitHub du projet}. Il est implémenté en Matlab car les fonctions \verb|flowToColor.m| et \verb|computeColor.m| nous étaient déjà fournies.\\
+
+On créé donc une fonction \verb|horn_schunck(I1, I2, alpha, n_iter, gauss_sigma)| qui prend en argument:
+
+\begin{itemize}
+    \item \verb|I1| et \verb|I2| 2 images successives en niveau de gris
+    \item \verb|alpha| le paramètre de régularisation (10 par défaut)
+    \item \verb|n_iter| le nombre d'itérations pour la boucle de mise à jour (pour des images simple l'état de l'art recommande 100 à 300 itérations mais peut augmenter avec la taille de l'image)
+    \item \verb|gauss_sigma| la valeur du flou gaussien que l'ont va appliquer (0.8 est convenable)\\
+\end{itemize}
+
+\textit{Remarque:} plus \verb|alpha| est élevé, plus la convergence sera lente et plus il faudra augmenter \verb|n_iter|.\\
+
+
+En sortie on recupère \verb|[u, v]| qui sont les valeurs pour chaque point de l'image du déplacement du flot optique selon $\Vec{x}$ et $\Vec{y}$.\\
+
+Pour tracer le flot optique de manière analogue à l'article (sous forme de flèches) on peut créer une fonction \verb|plotFlowArrows.m| qui va tracer les flèches correspondantes au flot et pouvoir voir l'effet des modification d'alpha sur le flot optique car \verb|flowToColor| normalise les valeurs ce qui n'est pas représentatif.\\
+
+Voici ce que donne l'application de l'algorithme avec \verb|alpha = 10| et \verb|n_iter = 200|:
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\linewidth]{flow12_alpha10.png}
+    \caption{Flot optique pour $\alpha = 10$}
+    \label{fig:placeholder}
+\end{figure}
+
+\subsubsection{Impact de $\alpha$}
+
+Si l'on modifie alpha le sens des flèches n'est pas modifié mais leur longueur va évoluer, plus alpha est grand plus les flèches seront régulières dans les zones de mouvement et lorsque alpha est plus petit les flèches sont plus petites et plus chaotiques.
+
+\begin{figure}[h!]
+    \centering
+    % première image
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{flow12_alpha01.png}
+        \caption{$\alpha = 0.1$}
+    \end{minipage}
+    \hfill
+    % deuxième image
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{flow12_alpha100.png}
+        \caption{$\alpha = 100$}
+    \end{minipage}
+\end{figure}
+
+\subsubsection{Impact du nombre d'itérations}
+
+Plus il y a d'itération plus on détectera des variations plus faibles du flot optique avec le risque de ne pas tout détecter si le nombre est trop faible et de trop détecter avec un nombre trop élevé.
+
+\begin{figure}[h!]
+    \centering
+    % première image
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{n100.png}
+        \caption{100 itérations}
+    \end{minipage}
+    \hfill
+    % deuxième image
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{n1000.png}
+        \caption{1000 itérations}
+    \end{minipage}
+\end{figure}
+
+\subsubsection{Détection des objets en mouvement}
+
+Pour détecter les objets en mouvement on se base sur la magnitude du flot optique que l'on compare pour chaque point à la moyenne.\\
+
+
+
+\begin{lstlisting}
+ mag = sqrt(u.^2 + v.^2);
+
+% seuil adaptatif
+th = mean(mag(:)) + 0.5 * std(mag(:));
+
+mask = mag > th;
+\end{lstlisting}
+
+\begin{figure}[h!]
+    \centering
+    % première image
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Im1.png}
+        \caption{Image en niveau de gris}
+    \end{minipage}
+    \hfill
+    % deuxième image
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{contour.png}
+        \caption{Masque des objets en mouvement}
+    \end{minipage}
+\end{figure}
 
 
 \section{Conclusion}

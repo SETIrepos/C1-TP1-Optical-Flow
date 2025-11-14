@@ -300,14 +300,15 @@ pour segmenter les zones en mouvement.
 
 Il est mentionné dans l'article que cet algorithme est assez sensible au bruit, il peut être intéressant de filtrer les images pour rendre la détection du flow optique plus fluide. On utilise simplement un filtre gaussien.
 
-% Contenu à compléter
-
-\section{Résultats}
-
-% Contenu à compléter
 
 \section{Conclusion}
 
-% Contenu à compléter
+Dans ce TP nous avons exploré deux approches complémentaires pour la détection de mouvement sur une séquence vidéo d'autoroute : la soustraction de fond et l'analyse du flot optique.
+
+La \textbf{soustraction de fond} repose sur le calcul de statistiques ($\mu$ et $\sigma$) pour chaque pixel. L'approche globale, bien que simple, présente des limites importantes : elle confond les périodes de stabilité avec les transitions. L'\textbf{algorithme Sigma-Delta} améliore cette méthode en proposant une mise à jour adaptative du modèle de fond, permettant une détection plus robuste et réactive aux changements d'éclairage.
+
+L'\textbf{analyse du flot optique} par la méthode de Horn \& Schunck offre une approche différente en estimant directement le champ de déplacement entre images consécutives. Cette méthode, permet d'obtenir un champ de mouvement dense et lissé. La magnitude du flot optique fournit une mesure directe de l'intensité du mouvement, facilitant ainsi la segmentation des objets en déplacement.
+
+Ces deux approches présentent des avantages complémentaires : la soustraction de fond est efficace pour détecter des objets en mouvement sur un fond statique, tandis que le flot optique fournit des informations plus riches sur la direction et l'amplitude du mouvement.
 
 \end{document}

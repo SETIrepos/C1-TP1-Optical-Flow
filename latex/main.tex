@@ -91,9 +91,6 @@ Trois valeurs de $N$ ont été testées : $N = 5$, $N = 20$ et $N = 100$ (figure
 
 Les images d'écart-type (figure \ref{fig:std}) révèlent clairement les zones de mouvement.
 
-
-\subsection{Discussion}
-
 La détection des véhicules s'effectue par seuillage sur $\sigma$ : un pixel appartient au fond si $\sigma(i,j) < \text{seuil}$. Le choix de $N$ influence la qualité de la détection :
 
 \begin{itemize}
@@ -104,8 +101,6 @@ La détection des véhicules s'effectue par seuillage sur $\sigma$ : un pixel ap
 
 Le seuil doit être ajusté pour ne conserver que les pixels présentant une variation significative, tout en éliminant le bruit de fond.
 
-\subsection{Application du seuillage}
-
 L'application d'un seuil $\sigma > 30$ permet de segmenter les zones de mouvement (figure \ref{fig:seuillage}). Les pixels blancs représentent les zones où des véhicules ont été détectés.
 
 \begin{figure}[H]
@@ -115,14 +110,7 @@ L'application d'un seuil $\sigma > 30$ permet de segmenter les zones de mouvemen
     \label{fig:seuillage}
 \end{figure}
 
-On observe que :
-\begin{itemize}
-    \item Avec $N=5$ : présence de bruit, détection moins stable
-    \item Avec $N=20$ : bon compromis, détection claire des trajectoires
-    \item Avec $N=100$ : détection plus lissée, trajectoires élargies
-\end{itemize}
-
-Ces résultats confirment que le choix de $N$ et du seuil sont cruciaux pour obtenir une détection fiable tout en limitant les faux positifs.
+On observe que pour $N=5$, la détection est instable et bruitée. Lorsque $N=20$, le résultat constitue un bon compromis avec une détection claire des trajectoires. Enfin, pour $N=100$, la détection apparaît plus lissée, mais les trajectoires sont élargies.
 
 \subsection{Limites de l'approche globale}
 
@@ -214,11 +202,13 @@ Pour exploiter cette propriété, on applique l'algorithme Sigma-Delta directeme
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_seuillage_simple.png}
+    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_seuillage.png}
     \caption{Comparaison des masques de détection. L'approche LAB maintient la détection des véhicules.}
     \label{fig:seuillage_lab}
 \end{figure}
 
+
+L'approche LAB n'est pas particulièrement plus performante et est une solution plus bruitée que l'approche en niveaux de gris. Ainsi sans traitement supplémentaire, LAB n'apporte pas d'amélioration significative et reste moins bonne que l'approche en niveaux de gris RGB.
 
 \section{Exercice 2 - Flot Optique}
 

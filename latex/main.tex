@@ -408,6 +408,34 @@ mask = mag > th;
     \end{minipage}
 \end{figure}
 
+\subsubsection{Détection finale}
+
+Lorsque que l'ont prend un nombre d'itérations convenable (300), une valeur d'alpha moyenne (10), on arrive à trouver un bon compromis entre le temps d’exécution et la précision:
+
+\begin{figure}[h!]
+    \centering
+    % première image
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{Im1.png}
+        \caption{Image 1}
+    \end{minipage}
+    \hfill
+    % deuxième image
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{flowColor.png}
+        \caption{Flot colorisé via $flowToColor$}
+    \end{minipage}
+    \hfill
+    % troisième image
+    \begin{minipage}{0.3\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{contour.png}
+        \caption{Détection des objets en mouvement}
+    \end{minipage}
+\end{figure}
+
 
 \section{Conclusion}
 

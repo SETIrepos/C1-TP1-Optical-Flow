@@ -201,7 +201,95 @@ Pour exploiter cette propriété, on applique l'algorithme Sigma-Delta directeme
 \end{figure}
 
 
-\section{Détection par flot optique}
+\section{Exercice 2 - Flot Optique}
+
+Nous allons présenter le principe fondamental de la méthode classique de Horn \& Schunck pour l'estimation du flot optique entre deux images consécutives, ainsi que l'implémentation MATLAB de l'algorithme telle que demandée dans l'énoncé.
+
+\subsection{Hypothèse et formulation du problème}
+
+L'article de Horn \& Schunck repose sur l'hypothèse de \textbf{constance de la luminance} :
+\[
+I(x+u, y+v, t+1) \approx I(x,y,t),
+\]
+où $(u,v)$ est le déplacement entre deux images successives.  
+Après linéarisation, on obtient :
+\[
+E_x u + E_y v + E_t = 0,
+\]
+où $E_x, E_y$ sont les dérivées spatiales et $E_t$ la dérivée temporelle.
+
+Cette équation étant sous-déterminée, les auteurs ajoutent un terme de \textbf{régularisation} permettant d’imposer la lisibilité du champ de mouvement :
+
+\[
+\mathcal{E}(u,v) = \iint (E_xu + E_yv + E_t)^2 + \alpha^2 \left( \|\nabla u\|^2 + \|\nabla v\|^2 \right)\, dx\, dy .
+\]
+
+Le paramètre $\alpha$ contrôle la force de cette régularisation :  
+\begin{itemize}
+    \item $\alpha$ petit : flot plus détaillé mais sensible au bruit,
+    \item $\alpha$ grand : flot très lissé mais perte de détails.
+\end{itemize}
+
+\subsection{Discrétisation des dérivées (Section 7)}
+
+Les dérivées proposées par Horn \& Schunck utilisent des noyaux 2x2 symétriques :
+
+\[
+k_x = \frac{1}{4}\begin{bmatrix}-1 & 1\\ -1 & 1\end{bmatrix},\quad
+k_y = \frac{1}{4}\begin{bmatrix}-1 & -1\\ 1 & 1\end{bmatrix},\quad
+k_t = \frac{1}{4}\begin{bmatrix}1 & 1\\ 1 & 1\end{bmatrix}.
+\]
+
+Elles sont appliquées aux deux images pour obtenir $E_x, E_y, E_t$.
+
+\subsection{Laplacien et terme de lissage (Section 8)}
+
+Horn \& Schunck utilisent une moyenne pondérée des 8 voisins pour approcher le laplacien :
+
+\[
+\text{avg\_k} = 
+\begin{bmatrix}
+1/12 & 1/6 & 1/12 \\
+1/6 & 0 & 1/6 \\
+1/12 & 1/6 & 1/12 
+\end{bmatrix}.
+\]
+
+Cette moyenne correspond à l'estimation locale des valeurs $\bar u$ et $\bar v$ utilisées dans la mise à jour du schéma. C'est pour cela que la valeur centrale est 0 et non -1 car la valeur du pixel n'influence pas la valeur de la moyenne des voisins.
+
+\subsection{Schéma final d’itération (Section 12)}
+
+À chaque itération :
+
+\[
+\begin{aligned}
+\bar u &= \text{avg}(u),\qquad \bar v = \text{avg}(v),\\
+u &= \bar u - \frac{E_x(E_x \bar u + E_y \bar v + E_t)}{\alpha^2 + E_x^2 + E_y^2},\\
+v &= \bar v - \frac{E_y(E_x \bar u + E_y \bar v + E_t)}{\alpha^2 + E_x^2 + E_y^2}.
+\end{aligned}
+\]
+
+Ce schéma est appliqué environ 100 à 300 fois.
+
+\subsection{Détection simple des objets en mouvement}
+
+Pour détecter si un pixel est en mouvement entre 2 images, on peut calculer les magnitude du flow optique, autrement dit la "force" avec laquelle le pixel bouge entre les 2 images et on peut comparer cette magnitude avec la moyenne des magnitudes de chaque pixel de l'image.\\
+
+La magnitude du flot optique :
+\[
+m = \sqrt{u^2 + v^2}
+\]
+permet de définir un seuil :
+
+\[
+m > \mu_m + 0.5 \sigma_m
+\]
+
+pour segmenter les zones en mouvement.
+
+\subsection{Filtrage Gaussien}
+
+Il est mentionné dans l'article que cet algorithme est assez sensible au bruit, il peut être intéressant de filtrer les images pour rendre la détection du flow optique plus fluide. On utilise simplement un filtre gaussien.
 
 % Contenu à compléter
 

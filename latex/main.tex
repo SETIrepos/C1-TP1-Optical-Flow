@@ -1,0 +1,216 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+% Marges
+\geometry{top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm}
+
+\begin{document}
+
+% Page de titre
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\huge\bfseries TP de Vision Robotique\par}
+    \vspace{0.5cm}
+    {\Large Séance 2\par}
+    \vspace{2cm}
+    
+    {\Large Hugo Miquel\par}
+    
+    \vfill
+    
+    {\large \today\par}
+\end{titlepage}
+
+% Table des matières (optionnel)
+% \tableofcontents
+% \newpage
+
+\section{Introduction}
+
+L'objectif de ce TP est de détecter les voitures en mouvement sur une séquence vidéo d'autoroute (environ 600 images). Deux approches seront utilisées : la soustraction de fond et l'analyse du flot optique.
+
+\section{Détection par soustraction de fond}
+
+\subsection{Principe}
+
+Pour chaque pixel $(i, j)$, on calcule sa moyenne $\mu(i,j)$ et son écart-type $\sigma(i,j)$ sur $N$ images en niveaux de gris :
+
+\begin{equation}
+\mu(i,j) = \frac{1}{N} \sum_{k=1}^{N} I_k(i,j) \quad ; \quad
+\sigma(i,j) = \sqrt{\frac{1}{N} \sum_{k=1}^{N} (I_k(i,j) - \mu(i,j))^2}
+\end{equation}
+
+Les pixels du fond (route, bâtiments) ont un $\sigma$ faible (valeur constante), tandis que les pixels où passent des véhicules ont un $\sigma$ élevé (forte variation).
+
+\subsection{Résultats}
+
+Trois valeurs de $N$ ont été testées : $N = 5$, $N = 20$ et $N = 100$ (figure \ref{fig:mean_std}).
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_moyennes.png}
+    \caption{Images moyennes pour différentes valeurs de $N$}
+    \label{fig:mean}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_ecarts_types.png}
+    \caption{Images d'écart-type pour différentes valeurs de $N$. Les zones rouges/jaunes indiquent les pixels à forte variation (passage de véhicules).}
+    \label{fig:std}
+\end{figure}
+
+Les images d'écart-type (figure \ref{fig:std}) révèlent clairement les zones de mouvement.
+
+
+\subsection{Discussion}
+
+La détection des véhicules s'effectue par seuillage sur $\sigma$ : un pixel appartient au fond si $\sigma(i,j) < \text{seuil}$. Le choix de $N$ influence la qualité de la détection :
+
+\begin{itemize}
+    \item \textbf{$N$ trop faible} (ex: $N=5$) : sensibilité au bruit, statistiques peu robustes
+    \item \textbf{$N$ trop élevé} (ex: $N=100$) : lissage excessif, perte de précision temporelle
+    \item \textbf{Compromis} : $N=20$ offre un bon équilibre entre robustesse et réactivité
+\end{itemize}
+
+Le seuil doit être ajusté pour ne conserver que les pixels présentant une variation significative, tout en éliminant le bruit de fond.
+
+\subsection{Application du seuillage}
+
+L'application d'un seuil $\sigma > 30$ permet de segmenter les zones de mouvement (figure \ref{fig:seuillage}). Les pixels blancs représentent les zones où des véhicules ont été détectés.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_seuillage.png}
+    \caption{Résultat du seuillage sur l'écart-type ($\sigma > 30$) pour les trois valeurs de $N$. Les zones blanches correspondent aux pixels de mouvement (voitures).}
+    \label{fig:seuillage}
+\end{figure}
+
+On observe que :
+\begin{itemize}
+    \item Avec $N=5$ : présence de bruit, détection moins stable
+    \item Avec $N=20$ : bon compromis, détection claire des trajectoires
+    \item Avec $N=100$ : détection plus lissée, trajectoires élargies
+\end{itemize}
+
+Ces résultats confirment que le choix de $N$ et du seuil sont cruciaux pour obtenir une détection fiable tout en limitant les faux positifs.
+
+\subsection{Limites de l'approche globale}
+
+En analysant l'évolution temporelle du pixel (200, 150) situé au milieu de la route (figure \ref{fig:pixel_evolution}), on constate que le calcul global de $(\mu, \sigma)$ sur toute la séquence est trompeur.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{../resultats_soustraction_fond/evolution_pixel_200_150.png}
+    \caption{Évolution temporelle du niveau de gris du pixel (200, 150). Les variations brusques correspondent aux passages de véhicules.}
+    \label{fig:pixel_evolution}
+\end{figure}
+
+L'écart-type calculé sur l'ensemble de la séquence est élevé, ce qui conduit à classer ce pixel comme étant en mouvement. Pourtant, entre les passages de véhicules, le pixel reste stable et correspond au fond de la route. Le calcul global mélange donc des périodes de stabilité (fond) et des transitions (passages de véhicules), ce qui fausse la détection.
+
+\subsection{Amélioration : détection de plateaux temporels}
+
+Pour améliorer la détection, il faut exploiter la cohérence temporelle locale. L'idée est d'identifier des \textbf{plateaux} dans le signal, c'est-à-dire des périodes où le pixel est stable, puis de calculer $(\mu, \sigma)$ uniquement sur ces plateaux.
+
+\textbf{Méthode proposée :}
+\begin{enumerate}
+    \item Calculer les différences entre images consécutives : $\Delta_k = |I_k(i,j) - I_{k-1}(i,j)|$
+    \item Identifier les plateaux : séquences où $\Delta_k < \text{seuil}_{\Delta}$ (faible variation)
+    \item Calculer $\mu$ et $\sigma$ uniquement sur les valeurs appartenant aux plateaux
+\end{enumerate}
+
+Cette approche permet de mieux caractériser le fond en ignorant les transitions dues aux véhicules, améliorant ainsi la robustesse de la détection.
+
+\subsection{Algorithme Sigma-Delta ($\Sigma\Delta$)}
+
+\subsubsection{Principe}
+
+L'algorithme Sigma-Delta est une approche adaptative qui met à jour progressivement, pour chaque pixel, une estimation de la moyenne $M$ et de la variance $V$ du fond.
+
+Les mises à jour se font de manière incrémentale :
+\begin{itemize}
+    \item Si le pixel actuel est plus clair que $M$, on incrémente $M$ de 1
+    \item Si le pixel actuel est plus sombre que $M$, on décrémente $M$ de 1
+    \item Si la différence $|I - M|$ est grande, on augmente $V$, sinon on la diminue
+\end{itemize}
+
+Un pixel est détecté comme mouvement si : $|I(i,j) - M(i,j)| > N \cdot V(i,j)$
+
+Le paramètre $N$ contrôle la sensibilité de la détection.
+
+\subsubsection{Résultats et discussion}
+
+L'algorithme a été testé avec trois valeurs de $N$ : 1, 2 et 4 (figure \ref{fig:sigmadelta}).
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/sigmadelta_comparaison.png}
+    \caption{Résultats de l'algorithme Sigma-Delta pour différentes valeurs de $N$. Les zones blanches indiquent les mouvements détectés.}
+    \label{fig:sigmadelta}
+\end{figure}
+
+On constate que pour $N=1$, l'algorithme est très sensible et génère de nombreux faux positifs, notamment du bruit et des ombres. Avec $N=2$, on obtient un bon équilibre et une détection claire des véhicules. En revanche, pour $N=4$, la détection devient moins sensible et certains véhicules peuvent ne pas être détectés.
+
+Le choix des paramètres est donc crucial : $N=2$ offre le meilleur compromis pour cette séquence, tandis qu'une valeur minimale de variance $V_{min} = 2$ permet d'éviter une sensibilité excessive au bruit.
+
+\textbf{Avantages :} adaptation automatique au changement d'éclairage, faible coût mémoire (pas besoin de stocker plusieurs images), calculs simples et rapides.
+
+\textbf{Limites :} sensible au choix de $N$, convergence lente si un véhicule reste stationnaire longtemps.
+
+\subsection{Utilisation d'espaces colorimétriques}
+
+L'algorithme en niveaux de gris détecte non seulement les véhicules mais aussi leurs ombres. Pour réduire cette détection parasite, on peut exploiter les images couleur dans des espaces colorimétriques différents.
+
+L'espace HSV ne s'avère pas adapté pour filtrer les ombres. En effet, les ombres modifient non seulement la luminosité (canal V), mais aussi la teinte (H) et la saturation (S) (figure \ref{fig:canaux_hsv}).
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resultats_soustraction_fond/canaux_RGB_HSV.png}
+    \caption{Décomposition en canaux RGB et HSV. Les ombres affectent tous les canaux HSV, y compris H et S.}
+    \label{fig:canaux_hsv}
+\end{figure}
+
+À l'inverse, l'espace LAB se révèle bien plus efficace. Les canaux a et b représentent uniquement la chrominance, indépendante de la luminosité. Les ombres, qui affectent principalement le canal L, sont ainsi ignorées (figure \ref{fig:canaux_lab}).
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resultats_soustraction_fond/canaux_LAB.png}
+    \caption{Décomposition en canaux LAB. Le canal L contient l'information de luminosité (ombres), tandis que a et b contiennent uniquement la chrominance.}
+    \label{fig:canaux_lab}
+\end{figure}
+
+\subsubsection{Application de Sigma-Delta sur LAB (a+b)}
+
+Pour exploiter cette propriété, on applique l'algorithme Sigma-Delta directement sur les canaux a et b. On calcule d'abord la magnitude de la chrominance : $\text{chroma} = \sqrt{a^2 + b^2}$, puis on applique Sigma-Delta sur cette image en niveaux de gris.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{../resultats_soustraction_fond/comparaison_seuillage_simple.png}
+    \caption{Comparaison des masques de détection. L'approche LAB maintient la détection des véhicules.}
+    \label{fig:seuillage_lab}
+\end{figure}
+
+
+\section{Détection par flot optique}
+
+% Contenu à compléter
+
+\section{Résultats}
+
+% Contenu à compléter
+
+\section{Conclusion}
+
+% Contenu à compléter
+
+\end{document}
